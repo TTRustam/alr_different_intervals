@@ -5,6 +5,7 @@ library(scales)
 library(expm)
 library(compositions)
 library(expm)
+
 gather_wave_data <- function(data,
                              dead    = "deadoralive_w9", 
                              age     = "age_int_w9", 
@@ -36,13 +37,13 @@ gather_wave_data <- function(data,
     distinct()
   
   gen_files %>%
-    left_join(health) %>% 
-    mutate(year = ifelse(deceased_year > 0, deceased_year, year)) %>% 
-    mutate(age  = ifelse(deceased_age  > 0, deceased_age,  age)) %>% 
+    left_join(health) %>%
+    mutate(year = ifelse(deceased_year > 0, deceased_year, year)) %>%
+    mutate(age  = ifelse(deceased_age  > 0, deceased_age,  age)) %>%
     dplyr::select(-c(country, deceased_year, deceased_age)) %>% 
     # filter(year %in% time) %>% !!!!!!!!!!!!!!!!!!!!!!
     filter(age > 0) %>%
-    mutate(dead   = ifelse(dead == 2, "D", 0)) %>% 
+    mutate(dead   = ifelse(dead == 2, "D", NA_character_)) %>% 
     mutate(gender = ifelse(gender == 2, "female", "male")) %>%
     mutate(gali = case_when(
       gali == 0 ~ "H",
@@ -59,65 +60,68 @@ gather_wave_data <- function(data,
       chronic > 0  ~ "U",
       TRUE  ~ NA_character_
     )) %>% 
-    mutate(across(c(gali, sphus, chronic), ~ ifelse(is.na(.), dead, .))) %>% 
-    dplyr::select(-dead) %>% 
-    mutate(across(c(gali, sphus, chronic), ~ ifelse(. == "0", NA_character_, .)))  %>% 
-    mutate(gali      = ifelse(is.na(gali)    & !is.na(chronic), chronic, gali))    %>%
-    mutate(gali      = ifelse(is.na(gali)    & !is.na(sphus),   sphus,   gali))    %>% 
-    mutate(chronic   = ifelse(is.na(chronic) & !is.na(gali),    gali,    chronic)) %>% 
-    mutate(chronic   = ifelse(is.na(chronic) & !is.na(sphus),   sphus,   chronic)) %>% 
-    mutate(sphus     = ifelse(is.na(sphus)   & !is.na(gali),    gali,    sphus))   %>% 
-    mutate(sphus     = ifelse(is.na(sphus)   & !is.na(sphus),   chronic, sphus))   %>%
-    filter(!is.na(gali))
+    mutate(across(c(gali, sphus, chronic), ~ ifelse(is.na(.) & !is.na(dead), dead, .))) %>% 
+    dplyr::select(-dead)
+    # mutate(across(c(gali, sphus, chronic), ~ ifelse(. == "0", NA_character_, .))) 
+  # %>% 
+  #   mutate(gali      = ifelse(is.na(gali)    & !is.na(chronic), chronic, gali))    %>%
+  #   mutate(gali      = ifelse(is.na(gali)    & !is.na(sphus),   sphus,   gali))    %>% 
+  #   mutate(chronic   = ifelse(is.na(chronic) & !is.na(gali),    gali,    chronic)) %>% 
+  #   mutate(chronic   = ifelse(is.na(chronic) & !is.na(sphus),   sphus,   chronic)) %>% 
+  #   mutate(sphus     = ifelse(is.na(sphus)   & !is.na(gali),    gali,    sphus))   %>% 
+  #   mutate(sphus     = ifelse(is.na(sphus)   & !is.na(sphus),   chronic, sphus))   %>%
+  #   filter(!is.na(gali))
   
 }
 
-make_dt <- function(.data, var = "sphus") { 
-  
-  .data %>%
-    # filter(mergeid == "ES-003038-01") %>% 
-    dplyr::select(id  = mergeid,
-                  sex = gender,
-                  age,
-                  time = year, 
-                  health := !!sym(var)) %>% 
-    group_by(id) %>%
-    mutate(n = n()) %>%
-    ungroup() %>%
-    filter(n > 1) %>% # remove people who are only shown once in the data
-    group_by(sex, id) %>%
-    # arrange by age
-    arrange(age) %>%
-    mutate(tst = ifelse(last(health == "D") & any(is.na(health)), 1, 0)) %>%
-    mutate(health = ifelse(tst == 1 & is.na(health), "U", health)) %>%
-    # input time t + 1 as time t if missing
-    fill(health, .direction = "down") %>%
-    # do vice versa
-    fill(health, .direction = "up") %>%
-    # now create to and from states
-    # for each ID
-    group_by(id) %>%
-    # arrange by are
-    arrange(age) %>%
-    # create from variable
-    rename(from = health) %>%
-    # create to variable with lead
-    mutate(to   = lead(from)) %>%
-    ungroup() %>%
-    # final imputation
-    mutate(to = ifelse(from == "D", "D", to)) %>%
-    # remove the people for which we know nothing
-    filter(!is.na(from)) %>%
-    mutate(to = ifelse(is.na(to) & !is.na(from), from, to)) %>%
-    # create period variable
-    dplyr::select(-c(n, tst)) %>% 
-    filter(age > 49)%>% 
-    filter(from != "D")
-  
-}
+# make_dt <- function(.data, var = "sphus") { 
+#   
+#   .data %>%
+#     # filter(mergeid == "ES-003038-01") %>% 
+#     dplyr::select(id  = mergeid,
+#                   sex = gender,
+#                   age,
+#                   time = year, 
+#                   health := !!sym(var)) %>% 
+#     group_by(id) %>%
+#     mutate(n = n()) %>%
+#     ungroup() %>%
+#     filter(n > 1) %>% # remove people who are only shown once in the data
+#     group_by(sex, id) %>%
+#     # arrange by age
+#     arrange(age) %>%
+#     mutate(tst = ifelse(last(health == "D") & any(is.na(health)), 1, 0)) %>%
+#     mutate(health = ifelse(tst == 1 & is.na(health), "U", health)) %>%
+#     # input time t + 1 as time t if missing
+#     fill(health, .direction = "down") %>%
+#     # do vice versa
+#     fill(health, .direction = "up") %>%
+#     # now create to and from states
+#     # for each ID
+#     group_by(id) %>%
+#     # arrange by are
+#     arrange(age) %>%
+#     # create from variable
+#     rename(from = health) %>%
+#     # create to variable with lead
+#     mutate(to   = lead(from)) %>%
+#     ungroup() %>%
+#     # final imputation
+#     mutate(to = ifelse(from == "D", "D", to)) %>%
+#     # remove the people for which we know nothing
+#     filter(!is.na(from)) %>%
+#     mutate(to = ifelse(is.na(to) & !is.na(from), from, to)) %>%
+#     # create period variable
+#     dplyr::select(-c(n, tst)) %>% 
+#     filter(age > 49)%>% 
+#     filter(from != "D")
+#   
+# }
 
 
-gen_files <- read_sav("SHARE/sharewX_rel9-0-0_gv_allwaves_cv_r.sav")
+
+
+gen_files  <- read_sav("SHARE/sharewX_rel9-0-0_gv_allwaves_cv_r.sav")
 health9    <- read_sav("SHARE/sharew9_rel9-0-0_gv_health.sav")
 health8    <- read_sav("SHARE/sharew8_rel9-0-0_gv_health.sav")
 health7    <- read_sav("SHARE/sharew7_rel9-0-0_gv_health.sav")
@@ -178,7 +182,6 @@ one <- gather_wave_data(data    = health1,
                         year    = "int_year_w1",
                         disease = "chronicw1")
 
-
 share <- one %>% 
   full_join(two) %>% 
   full_join(four) %>% 
@@ -196,30 +199,65 @@ share1 <-  share %>%
   filter(year %in% c(2011, 2013, 2015, 2017))
 
 
+
+make_dt <- function(.data, var = "sphus") { 
+  
+  share1 %>%
+    dplyr::select(id  = mergeid,
+                  sex = gender,
+                  age,
+                  time = year, 
+                  health := !!sym(var)) %>% 
+    group_by(id) %>%
+    mutate(n = n()) %>%
+    ungroup() %>%
+    filter(n > 1) %>% # remove people who are only shown once in the data
+  
+    # create from variable
+    rename(from = health) %>%
+    group_by(id) %>% 
+    arrange(age) %>% 
+  
+    # create to variable with lead
+    mutate(to   = lead(from)) %>%
+    ungroup() %>%
+    # create period variable
+    filter(age > 49) %>%
+    filter(from != "D") %>% 
+    filter(!is.na(to))
+  
+}
+
+
 # sum up the initial entries to 2-year probs
 self  <- share1 %>% 
   make_dt(var = "sphus")%>% 
   arrange(id, time, age) %>% 
   mutate(age2 = age - age %% 2,
          age3 = age %% 2) %>% 
-  mutate(age = age2)
+  mutate(age = age2) %>% 
+  dplyr::select(-c(age2, age3))
+
 chron <- share1 %>% 
   make_dt(var = "chronic")%>% 
   arrange(id, time, age) %>% 
   mutate(age2 = age - age %% 2,
          age3 = age %% 2) %>% 
-  mutate(age = age2)
+  mutate(age = age2) %>% 
+  dplyr::select(-c(age2, age3))
+  
 gali  <- share1 %>% 
   make_dt(var = "gali")%>% 
   arrange(id, time, age) %>% 
   mutate(age2 = age - age %% 2,
          age3 = age %% 2) %>% 
-  mutate(age = age2)
+  mutate(age = age2) %>% 
+  dplyr::select(-c(age2, age3))
 
 
 new_data <- expand_grid(age  = seq(50, 110, 2),
                         from = c("H", "U"),
-                        time = unique(self$time),   # time measure
+                        time = sort(unique(self$time)),   # time measure
                         sex  = c("male", "female"))
 
 
@@ -287,7 +325,6 @@ probabilities <- function(.data) {
   return(lst(tst, empiric))
   
 }
-
 
 self_model <- self %>% 
   probabilities()
@@ -362,7 +399,7 @@ gali_model$tst %>%
   mutate(prob_emp = ifelse(prob_emp == 1, NA, prob_emp)) %>%
   filter(time == 2013) %>% # change years here.
   ggplot() +
-  geom_line(aes(x = age, y = prob, group = to, color = to), linewidth = 1) +
+  # geom_line(aes(x = age, y = prob, group = to, color = to), linewidth = 1) +
   geom_point(aes(x = age, y = prob_emp, color = to)) +
   facet_grid(from ~ sex, switch = "y") +
   scale_y_continuous(breaks = pretty_breaks())+
@@ -409,7 +446,7 @@ source("functions_grad.R")
 self1 <- self_mod %>%
   # filter(sex == "male") %>% # NOW for males | change to females if needed
   unnest(qxdata) %>%
-  filter(time > 2011) %>% 
+  # filter(time > 2011) %>% 
   group_nest(sex, time) %>%
   mutate(data = map(data, ~ .x %>%
                       set_names(c(
@@ -432,7 +469,7 @@ self1 <- self_mod %>%
 chron1 <- chron_mod %>%
   # filter(sex == "male") %>% # NOW for males | change to females if needed
   unnest(qxdata) %>%
-  filter(time > 2011) %>% 
+  # filter(time > 2011) %>% 
   group_nest(sex, time) %>%
   mutate(data = map(data, ~ .x %>%
                       set_names(c(
@@ -455,7 +492,7 @@ chron1 <- chron_mod %>%
 gali1 <- gali_mod %>%
   # filter(sex == "male") %>% # NOW for males | change to females if needed
   unnest(qxdata) %>%
-  filter(time > 2011) %>% 
+  # filter(time > 2011) %>% 
   group_nest(sex, time) %>%
   mutate(data = map(data, ~ .x %>%
                       set_names(c(
@@ -475,6 +512,34 @@ gali1 <- gali_mod %>%
   dplyr::select(sex, time, Ptibble1) %>% 
   unnest(Ptibble1)
   
+
+
+##### HERE IMPOSE 2 and 1 year
+uu2 <-
+self_mod %>%
+  unnest(qxdata) %>%
+  filter(time == 2013) %>%
+  pivot_longer(-c(age,sex,time),names_to = "transition",values_to = "p") %>%
+  mutate(transition = str_replace_all(transition, "-", ""))
+
+
+
+uu <- self1 |>
+  filter(time == 2013) %>%
+  pivot_longer(-c(age,sex,time),names_to = "transition",values_to = "p")
+
+uuu <-
+  ggplot() +
+  geom_line(data = uu,   aes(x=age,y=p,color=sex)) +
+  geom_line(data = uu2,  aes(x=age,y=p,color=sex), lty = 3) +
+  facet_wrap(~ transition) +
+  theme(legend.position = "bottom") +
+  theme_minimal()
+
+
+ggsave(uuu, filename = "one_and_two_self.jpeg", scale = 2)
+
+##########################################
 
 
 # # 1) make U closed
@@ -623,7 +688,7 @@ extr_self %>%
   dplyr::select(sex, time, nh_inverse) %>%
   unnest(c(nh_inverse)) %>%
   group_by(sex, time) %>%
-  mutate(age = 20:112, .after = 2) %>%
+  mutate(age = 19:112, .after = 2) %>%
   ungroup() %>%
   pivot_longer(-c(sex:age),
                names_to = "from_to",

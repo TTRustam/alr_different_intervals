@@ -21,8 +21,8 @@ adjust <- function(Ra = Ra_gali,
                    extrap_dat = extr_gali) { 
 
 prev_test <- prev %>%
-  dplyr::select(-c(mod_prev, emp_prev)) %>% 
-  rename(case = md_prv)
+  dplyr::select(-c(md_prv, emp_prev)) %>% 
+  rename(case = mod_prev)
 
 # read and filter hmd female data for males and females for Spain
 # ----------------------------------------------------------------- #
@@ -189,7 +189,8 @@ final_gali <- final_gali %>%
 final_share <- final_self %>% 
   full_join(final_chron) %>% 
   full_join(final_gali) %>% 
-  filter(age > 19)
+  filter(age > 49) %>% 
+  dplyr::select(-var)
 
 save(final_share, file = "Results/final_share.RData")
 

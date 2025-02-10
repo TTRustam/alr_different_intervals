@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------- #
 # source function
 source("functions.R")
-
+library(mgcv)
 # load database
 load("Results/self_health.RData")
 load("Results/lt_self.RData")
@@ -17,7 +17,7 @@ load("Results/lt_gali.RData")
 
 # ----------------------------------------------------------------- #
 
-new_data <- expand_grid(age   = unique(self_health$age),
+new_data <- expand_grid(age   = 50:110,
                         time  = unique(self_health$time),
                         sex   = c("male", "female"))
 
@@ -41,29 +41,33 @@ md_prev <- data_lt %>%
 # ----------------------------------------------------------------- #
 
 prev <- data_initial %>%
-  distinct() %>% 
+  distinct() %>%
   # new weight
   count(sex, time, age, from) %>%
-  group_by(sex, time, age) %>% #from 
-  summarise(N = sum(n[from == "U"]), # empirical prevalence
-            n = sum(n), .groups = "drop") %>%
-  mutate(prev = N / n) %>% 
+  group_by(sex, time, age) %>% #from
+  summarise(N = sum(n[from == "U"]),
+            # empirical prevalence
+            n = sum(n),
+            .groups = "drop") %>%
+  mutate(prev = N / n) %>%
   group_nest(sex) %>%
   # model the prevalence rate with binomial logit
-  mutate(model =  map(data, ~ glm(
-    prev ~ time + age,
+  mutate(model =  map(data, ~ gam(
+    prev ~ s(age) + time,
     weights = n,
     family = binomial(link = "logit"),
     data    = .x
-  ))) %>% 
+  ))) %>%
   ungroup() %>%
   # predict
-  nest_join(new_data, by = "sex") %>% 
-  mutate(predicted_data = map2(.x = model, .y = new_data, ~ predict(.x, .y, type = "response"))) %>%
+  nest_join(new_data, by = "sex") %>%
+  mutate(predicted_data = map2(
+    .x = model,
+    .y = new_data,
+    ~ predict(.x, .y, type = "response")
+  )) %>%
   mutate(finale = map2(.x = new_data, .y = predicted_data, ~ .x %>%
-                         bind_cols(.y) %>% 
-                         set_names(c(names(.)[c(1:2)], "case"))))
-
+                         mutate(case := .y)))
 
 # model prevalence
 # ----------------------------------------------------------------- #
@@ -104,7 +108,7 @@ prevalence <- mod_prev %>%
 
 # prevalence %>%
 #   mutate(time = as.factor(time)) %>%
-#   mutate(emp_prev = ifelse(emp_prev == 0, NA, emp_prev)) %>% 
+#   mutate(emp_prev = ifelse(emp_prev == 0, NA, emp_prev)) %>%
 #   ggplot() +
 #   # this one is lu / lx after alr
 #   geom_line(aes(x = age,  y = md_prv, color = sex)) +
@@ -115,7 +119,7 @@ prevalence <- mod_prev %>%
 #   facet_wrap(~ time, ncol = 3) +
 #   scale_y_continuous(breaks = pretty_breaks())+
 #   scale_x_continuous(breaks = pretty_breaks()) +
-#   theme_light() + 
+#   theme_light() +
 #   theme(legend.position = "bottom",
 #         strip.text = element_text(color = "black", face = "bold"),
 #         axis.title.y = element_blank(),
@@ -128,13 +132,11 @@ return(prevalence)
 # save prevalence
 # ----------------------------------------------------------------- #
 
-prev_self  <- prev_create(data_lt = lt_self,  data_initial = self_health) %>%
-  filter(time > 2011)
-prev_chron <- prev_create(data_lt = lt_chron, data_initial = chronic) %>%
-  filter(time > 2011)
+prev_self  <- prev_create(data_lt = lt_self,  data_initial = self_health)
+prev_chron <- prev_create(data_lt = lt_chron, data_initial = chronic)
 prev_gali  <- prev_create(data_lt = lt_gali,  data_initial = gali) 
 
-prev_self %>%
+prev_gali %>%
   mutate(time = as.factor(time)) %>%
   # mutate(emp_prev = ifelse(emp_prev == 0, NA, emp_prev)) %>%
   ggplot() +
