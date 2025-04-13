@@ -18,13 +18,11 @@ adjust <- function(Ra         = Ra_self,
   # read and filter hmd female data for males and females for Spain
   # ----------------------------------------------------------------- #
   
-  qx_data <- read_table("Data_HMD/fltper_1x1.txt", skip = 1) %>%
-    select(Year, Age, qx) %>%
-    filter(Year %in% c(2011:2016)) %>%
-    mutate(
-      Age = parse_number(Age),
-      qx  = as.numeric(qx)
-    )
+  
+  
+  
+ 
+  
   
     # read_table("Data_HMD/fltper_1x1.txt", skip = 1) %>% 
     #   filter(Year %in% c(2011, 2012)) %>% 
@@ -43,56 +41,69 @@ adjust <- function(Ra         = Ra_self,
     #     scale_y_log10()
     
   hmd_f <- read_table("Data_HMD/fltper_1x1.txt", skip = 1) %>%
-    dplyr::select(Year, Age, qx) %>% 
     mutate(
       Age = parse_number(Age),
       age = Age - Age %% 2
     ) %>%
-    group_by(Year, age) %>%
-    summarise(qx = 1 - prod(1 - qx, na.rm = TRUE),
-              mx_hmd = qx / (2 - qx), .groups = "drop") %>% 
-    dplyr::select(time = Year, age, mx_hmd) %>%
+    group_by(Year, age) %>% 
+    summarize(dx = sum(dx),
+              lx = lx[1], .groups = "drop") %>% 
+    mutate(qx = dx / lx,
+           mx_hmd = qx / (2 - qx)) %>% 
+    dplyr::rename(time = Year) %>% 
     mutate(sex = "female") %>% 
     filter(time %in% unique(prev_test$time),
-           age %in% unique(prev_test$age)) 
+           age %in% unique(prev_test$age))
   
     
   # hmd_f %>%
   #   mutate(time = as.factor(time)) %>%
-  #   #        Age = parse_number(Age)) %>%
   #   ggplot(aes(x = age, y = mx_hmd, color = time)) +
   #   geom_line() +
   #   scale_y_log10()
-  # 
+
     
   
   hmd_m <- read_table("Data_HMD/mltper_1x1.txt", skip = 1) %>%
-    dplyr::select(Year, Age, qx) %>% 
+    # dplyr::select(Year, Age, qx) %>% 
     mutate(
       Age = parse_number(Age),
       age = Age - Age %% 2
     ) %>%
-    group_by(Year, age) %>%
-    summarise(qx = 1 - prod(1 - qx, na.rm = TRUE),
-              mx_hmd = qx / (2 - qx), .groups = "drop") %>% 
-    dplyr::select(time = Year, age, mx_hmd) %>%
+    group_by(Year, age) %>% 
+    summarize(dx = sum(dx),
+              lx = lx[1], .groups = "drop") %>% 
+    mutate(qx     = dx / lx,
+           mx_hmd = qx / (2 - qx)) %>% 
+    dplyr::rename(time = Year) %>% 
     mutate(sex = "male") %>% 
     filter(time %in% unique(prev_test$time),
-           age %in% unique(prev_test$age)) 
+           age %in% unique(prev_test$age))
+    # group_by(Year, age) %>%
+    # summarise(qx = 1 - prod(1 - qx, na.rm = TRUE),
+              # mx_hmd = qx / (2 - qx), .groups = "drop") %>%
+    # dplyr::select(time = Year, age, mx_hmd) %>%
+    # mutate(sex = "male") %>% 
+    # filter(time %in% unique(prev_test$time),
+    #        age %in% unique(prev_test$age)) 
   
   
   # hmd_m %>%
-  #   # filter(between(Year, 2011, 2015)) %>%
   #   mutate(time = as.factor(time)) %>%
-  #   #        Age = parse_number(Age)) %>%
   #   ggplot(aes(x = age, y = mx_hmd, color = time)) +
   #   geom_line() +
   #   scale_y_log10()
-  
+  # 
   # overall hmd
   hmd <- hmd_f %>%
-    full_join(hmd_m)
+    full_join(hmd_m) %>% 
+    dplyr::select(-c(dx, lx, qx))
   
+  # hmd %>%
+  #   mutate(time = as.factor(time)) %>%
+  #   ggplot(aes(x = age, y = mx_hmd, color = time, lty = sex)) +
+  #   geom_line() +
+  #   scale_y_log10()
   # recalculate the mortality rates using Tim PAA abstract formula 5 and 4
   # ----------------------------------------------------------------- #
   new_mx <- Ra %>%
@@ -110,6 +121,7 @@ adjust <- function(Ra         = Ra_self,
            ) %>%
     dplyr::select(sex, time, age, `HD`, `UD`)
   
+  
   # diagnostic plot
   # Ra %>%
   #   full_join(prev_test) %>%
@@ -122,14 +134,13 @@ adjust <- function(Ra         = Ra_self,
   #                values_to = "val") %>%
   #   separate(variable, c("indicator", "old_new")) %>%
   #   mutate(time = as.factor(time)) %>%
-  #   filter(sex == "male") %>%
   #   ggplot(aes(x = age, y = val,
   #              group = interaction(old_new, indicator),
   #              color = indicator,
   #              linetype = old_new)) +
   #   geom_line() +
   #   scale_y_log10() +
-  #   facet_wrap( ~ time, strip.position = "left", ncol = 3) +
+  #   facet_wrap(sex ~ time, strip.position = "left", ncol = 3) +
   #   theme_bw() +
   #   theme(strip.background = element_blank(),
   #         axis.title.y = element_blank(),
@@ -139,7 +150,6 @@ adjust <- function(Ra         = Ra_self,
   # recalculate the transition probabilities with new mx values
   # ----------------------------------------------------------------- #
   old_trns <- extrap_dat %>%
-    filter(between(age, 20, 110)) %>% 
     dplyr::select(-c(`HD`, `UD`))
   
   new_trans <- old_trns %>% 
@@ -157,7 +167,6 @@ adjust <- function(Ra         = Ra_self,
   
   # old transition for plot
   old_plot <- extrap_dat %>% 
-    filter(between(age, 20, 110)) %>%
     pivot_longer(-c(sex, age, time),
                  names_to  = "var",
                  values_to = "val") %>% 
@@ -168,13 +177,13 @@ adjust <- function(Ra         = Ra_self,
     dplyr::select(-var)
   
   full_trns <- new_trans %>% 
-    full_join(old_plot)  
-  
+    full_join(old_plot) 
+    
   # diagnostic plot of old and new transitions
   # ----------------------------------------------------------------- #
   # full_trns %>%
   #   filter(time == 2013) %>%
-  #   filter(age %in% c(50:100)) %>% 
+  #   filter(age %in% c(50:100)) %>%
   #   ggplot() +
   #   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   #   facet_wrap(from ~ sex) +

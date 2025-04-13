@@ -39,7 +39,7 @@ lets <- function(.data) {
 
 
 # rates and Ra
-lt_self <-  extr_self %>% 
+lt_self <- extr_self %>% 
   calculate_Ra() %>% 
   group_by(sex, time) %>%
   mutate(lh = 0, lu = 0) %>%

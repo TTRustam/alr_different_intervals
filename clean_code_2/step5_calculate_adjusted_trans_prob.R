@@ -48,6 +48,7 @@ final_iadl  <- adjust(Ra         = Ra_iadl,
 
 final_self %>%
   filter(time == 2013) %>%
+    filter(age %in% c(50:100)) %>%
   ggplot() +
   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   facet_wrap(from ~ sex) +
@@ -63,6 +64,7 @@ final_self %>%
 
 final_chron %>%
   filter(time == 2013) %>%
+  filter(age %in% c(50:100)) %>%
   ggplot() +
   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   facet_wrap(from ~ sex) +
@@ -78,6 +80,7 @@ final_chron %>%
 
 final_gali %>%
   filter(time == 2013) %>%
+  filter(age %in% c(50:100)) %>%
   ggplot() +
   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   facet_wrap(from ~ sex) +
@@ -93,6 +96,7 @@ final_gali %>%
 
 final_adl %>%
   filter(time == 2013) %>%
+  filter(age %in% c(50:100)) %>%
   ggplot() +
   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   facet_wrap(from ~ sex) +
@@ -108,6 +112,7 @@ final_adl %>%
 
 final_iadl %>%
   filter(time == 2013) %>%
+  filter(age %in% c(50:100)) %>%
   ggplot() +
   geom_line(aes(x = age, y = val, color = to, lty = type), linewidth = 1) +
   facet_wrap(from ~ sex) +
@@ -149,9 +154,9 @@ final <- final_self %>%
   filter(between(age, 50, 100)) %>% 
   rename(prob = val,
          health_var = hvar,
-         asjusted = type) %>% 
-  mutate(asjusted = ifelse(asjusted == "Adjusted", "yes", "no")) %>% 
-  dplyr::select(health_var, asjusted, sex, time, age, from, to, prob)
+         adjusted = type) %>% 
+  mutate(adjusted = ifelse(adjusted == "Adjusted", "yes", "no")) %>% 
+  dplyr::select(health_var, adjusted, sex, time, age, from, to, prob)
 
 write.csv(final, file = gzfile("share_2_year_age_adj.csv.gz"))
 
