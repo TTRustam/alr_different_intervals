@@ -7,53 +7,65 @@ explain_names <- function(data) {
 }
 
 # -----------------------------------------------------------------------------#
-gather_wave_data <- function(data = hlth[[3]],
-                             age  = "age2011", 
-                             wave = "w4") {
+gather_wave_data <- function(data = hlth[[6]],
+                             wave = "w7") {
   
-  disease <- str_c("chronic", wave)
+  disease <- str_c("chronic",       wave)
+  age_int <- str_c("age_int_",      wave)
+  int_m   <- str_c("int_month_",    wave)
+  int_y   <- str_c("int_year_",     wave)
   wave    <- str_c("deadoralive_" , wave)
-  year    <- parse_number(age)
-  year    <- c(year, year + 1)
-  
+
   dead <- gen_files %>%
     dplyr::select(mergeid,
                   deceased_year,
+                  deceased_month,
                   deceased_age,
-                  deadoralive_w9) %>% 
+                  deadoralive_w9) %>%
     filter(deadoralive_w9 == 2,
            deceased_year > 0,
-           deceased_age  >= 0) %>% 
-    set_names("mergeid", "deceased_year", "deceased_age", "deadoralive") %>% 
-    filter(deceased_year %in% year) %>% #####
-    dplyr::select(-deceased_year)
+           deceased_age >= 0) %>%
+    mutate(deceased_month = ifelse(deceased_month < 0 | is.na(deceased_month), 1, deceased_month)) %>%
+    dplyr::select(-deceased_age) %>% 
+    set_names("mergeid", "deceased_year", "deceased_month", "deadoralive") %>%
+    unite(time_d, c("deceased_year", "deceased_month"), sep = ".") %>% 
+    mutate(time_d = ym(time_d))
   
   sample <- gen_files %>%
     dplyr::select(mergeid,
                   gender,
-                  contains(wave),
-                  !!sym(age)) %>%
-    mutate(year = min(year)) %>% 
-    set_names("mergeid", "gender", "deadoralive", "age", "year") %>%
+                  all_of(c(int_m, int_y, age_int)),
+                  contains(wave)) %>%
+    filter(!!sym(int_y) > 0) %>%
+    set_names("mergeid", "gender", 
+              "int_month",
+              "int_year",
+              "age",
+              "deadoralive") %>%
+    mutate(int_month = ifelse(int_month < 0 | is.na(int_month), 1, int_month)) %>%
     filter(deadoralive %in% c(1, 2)) %>% 
-    dplyr::select(-deadoralive)
+    dplyr::select(-deadoralive) %>%
+    unite(time_int, c("int_year", "int_month"), sep = ".") %>% 
+    mutate(time_int = ym(time_int))
   
-  # not known weather he was dead or alive at wave 5
-  # gen_files %>%
-  #   filter(mergeid == "ES-092725-01") %>%
-  #   view()
+  dead <- sample %>%
+    left_join(dead, by = "mergeid") %>%
+    filter(time_d >= time_int,
+           time_d <= time_int %m+% months(24, abbreviate = FALSE)) %>%
+    filter(age >= 0) %>% 
+    dplyr::select(-c(time_int, gender, age))
   
   generated <- sample %>%
     left_join(dead, by = "mergeid") %>%
-    mutate(age         = ifelse(!is.na(deceased_age), deceased_age, age),
+    filter(age > 0) %>%
+    mutate(time_int    = if_else(!is.na(time_d), time_d, time_int),
            deadoralive = ifelse(deadoralive == 2, "D", NA_character_),
-           gender      = ifelse(gender == 1, "male", "female")) %>%
-    dplyr::select(-deceased_age) %>%
-    filter(age >= 0)
+           gender      = ifelse(gender == 1, "male", "female"),
+           year        = year(time_int)) %>%
+    dplyr::select(-c(time_d, time_int))
   
   health  <- data %>%
     rename("chronic" := !!sym(disease))
-  
   
   health %>%
     left_join(generated, by = join_by(mergeid)) %>% 
@@ -104,6 +116,7 @@ make_dt <- function(.data, var) {
                   time = year, 
                   # choose health definition
                   health := !!sym(var)) %>%
+    filter(!is.na(health)) %>% 
     group_by(id) %>%
     # how many transitions per person
     mutate(n = n()) %>%
@@ -113,8 +126,7 @@ make_dt <- function(.data, var) {
     # remove helper variable
     dplyr::select(-n) %>% 
     # create from variable
-    rename(from = health) %>%
-    filter(!is.na(from)) %>% 
+    rename(from = health) %>% 
     group_by(id) %>% 
     arrange(age) %>%
     # create to variable with lead
@@ -182,6 +194,72 @@ probabilities <- function(.data) {
                          .y = predicted_data, ~ .x %>%
                            bind_cols(.y))) %>%
     dplyr::select(sex, from, finale) %>% 
+    unnest(finale) %>%
+    # predicted data. all this is to simply fit the new_data for transiton probabilities
+    group_nest(sex) %>%
+    # small data reformat, nothing fundamental, only wrangling
+    mutate(qxdata = map(
+      data,
+      ~ .x %>%
+        pivot_longer(c(H, U, D), 
+                     names_to  = "var", 
+                     values_to = "val") %>%
+        unite("trans", c(from, var), sep = "-") %>%
+        pivot_wider(names_from  = trans, 
+                    values_from = val)
+    )) %>%
+    dplyr::select(sex, qxdata)
+  
+  # calculate empirical transition probabilities
+  # ----------------------------------------------------------------- #
+  empiric <- .data %>%
+    # new weight
+    count(time, sex, age, from, to) %>%
+    group_by(sex, time, age, from) %>%
+    # empirical probabilities
+    reframe(to = to, 
+            prob_emp = n / sum(n)) %>%
+    ungroup()
+  
+  return(lst(tst, empiric))
+  
+}
+# -----------------------------------------------------------------------------#
+probabilities_no_time <- function(.data) {
+  
+  tst <- .data %>%
+    # calculate new weight
+    count(time, sex, age, from, to) %>%
+    group_nest(sex, from, time) %>%
+    # create base health level for multinom. reg. denominator
+    # it is always a self transition from H-H or U-U
+    mutate(data = ifelse(from == "H", map(data, ~ .x %>%
+                                            mutate(to = factor(
+                                              to, levels = c("H", "U", "D")
+                                            ))), 
+                         # else if from == U
+                         map(data, ~ .x %>%
+                               mutate(to = factor(
+                                 to, levels = c("U", "H", "D")
+                               ))))) %>%
+    # the model itself, weighted
+    # additive effects of age and time, no smoothing (wiggly) 
+    mutate(model =  map(data, ~ vgam(
+      to ~ age,
+      weights = n,
+      data    = .x,
+      family  = multinomial
+    ))) %>%
+    # predicted data. 
+    # all this is to fit predict the new_data for transition probabilities
+    nest_join(new_data, by = c("sex", "from", "time")) %>%
+    mutate(predicted_data = map2(.x = model, 
+                                 .y = new_data, ~
+                                   predict(.x, .y, type = "response"))) %>%
+    mutate(finale = map2(.x = new_data, 
+                         .y = predicted_data, ~ .x %>%
+                           bind_cols(.y))) %>%
+    dplyr::select(sex, from, finale, time) %>% 
     unnest(finale) %>%
     # predicted data. all this is to simply fit the new_data for transiton probabilities
     group_nest(sex) %>%

@@ -9,16 +9,6 @@ load("updated_results/inter_adl_2.RData")
 load("updated_results/inter_iadl_2.RData")
 # -----------------------------------------------------------------------------#
 # calculate lifetable. keep ages 20-110
-calculate_Ra <- function(.data) { 
-  
-  .data %>% 
-    group_by(sex, time) %>% 
-    mutate(mh = HD / (2 - HD),
-           mu = UD / (2 - UD)) %>% 
-    mutate(Ra = mu / mh)
-  
-}
-
 
 lets <- function(.data) {
   
@@ -36,6 +26,16 @@ lets <- function(.data) {
   
 }
 
+
+
+calculate_Ra <- function(.data) { 
+  
+  .data %>% 
+    group_by(sex, time) %>% 
+    # mutate(mh = HD / (2 - HD),
+    #        mu = UD / (2 - UD)) %>% 
+    mutate(Ra = UD / HD) # here changed for probability ratio
+}
 
 
 # rates and Ra
@@ -109,7 +109,7 @@ Ra_iadl <- lt_iadl %>%
 
 # tests mortality rates
 lt_self %>% 
-  dplyr::select(sex, time, age, mu, mh) %>% 
+  dplyr::select(sex, time, age, UD, HD) %>% 
   mutate(time = as.factor(time)) %>% 
   pivot_longer(-c(sex, time, age),
                names_to  = "mx",
@@ -122,7 +122,7 @@ lt_self %>%
   theme(legend.position = "bottom")
 
 lt_chron %>% 
-  dplyr::select(sex, time, age, mu, mh) %>% 
+  dplyr::select(sex, time, age, UD, HD) %>% 
   mutate(time = as.factor(time)) %>% 
   pivot_longer(-c(sex, time, age),
                names_to  = "mx",
@@ -135,7 +135,7 @@ lt_chron %>%
   theme(legend.position = "bottom")
 
 lt_gali %>% 
-  dplyr::select(sex, time, age, mu, mh) %>% 
+  dplyr::select(sex, time, age, UD, HD) %>% 
   mutate(time = as.factor(time)) %>% 
   pivot_longer(-c(sex, time, age),
                names_to  = "mx",
@@ -149,7 +149,7 @@ lt_gali %>%
 
 
 lt_adl %>% 
-  dplyr::select(sex, time, age, mu, mh) %>% 
+  dplyr::select(sex, time, age, UD, HD) %>% 
   mutate(time = as.factor(time)) %>% 
   pivot_longer(-c(sex, time, age),
                names_to  = "mx",
@@ -163,7 +163,7 @@ lt_adl %>%
 
 
 lt_iadl %>% 
-  dplyr::select(sex, time, age, mu, mh) %>% 
+  dplyr::select(sex, time, age, UD, HD) %>% 
   mutate(time = as.factor(time)) %>% 
   pivot_longer(-c(sex, time, age),
                names_to  = "mx",
@@ -177,6 +177,7 @@ lt_iadl %>%
 
 # test RA. Actually I do not like what I see
 lt_self %>% 
+  filter(between(age, 50, 100)) %>% 
   dplyr::select(sex, time, age, Ra) %>% 
   mutate(time = as.factor(time)) %>% 
   ggplot(aes(x = age, y = Ra, color = time)) + 
@@ -187,6 +188,7 @@ lt_self %>%
   theme(legend.position = "bottom")
 
 lt_chron %>% 
+  filter(between(age, 50, 100)) %>%
   dplyr::select(sex, time, age, Ra) %>% 
   mutate(time = as.factor(time)) %>% 
   ggplot(aes(x = age, y = Ra, color = time)) + 
@@ -197,6 +199,7 @@ lt_chron %>%
   theme(legend.position = "bottom")
 
 lt_gali %>% 
+  filter(between(age, 50, 100)) %>%
   dplyr::select(sex, time, age, Ra) %>% 
   mutate(time = as.factor(time)) %>% 
   ggplot(aes(x = age, y = Ra, color = time)) + 
@@ -207,6 +210,7 @@ lt_gali %>%
   theme(legend.position = "bottom")
 
 lt_adl %>% 
+  filter(between(age, 50, 100)) %>%
   dplyr::select(sex, time, age, Ra) %>% 
   mutate(time = as.factor(time)) %>% 
   ggplot(aes(x = age, y = Ra, color = time)) + 
@@ -217,6 +221,7 @@ lt_adl %>%
   theme(legend.position = "bottom")
 
 lt_iadl %>% 
+  filter(between(age, 50, 100)) %>%
   dplyr::select(sex, time, age, Ra) %>% 
   mutate(time = as.factor(time)) %>% 
   ggplot(aes(x = age, y = Ra, color = time)) + 
@@ -242,7 +247,6 @@ save(Ra_iadl,  file = "updated_results/Ra_iadl_2.RData")
 
 # -----------------------------------------------------------------------------#
 # diagnostic plot lh lu
-
 lt_self %>% 
   dplyr::select(sex, time, age, lu, lh) %>% 
   mutate(time = as.factor(time)) %>% 
@@ -266,7 +270,6 @@ lt_chron %>%
   facet_wrap(mx~  sex) + 
   theme_minimal() + 
   theme(legend.position = "bottom")
-
 
 lt_gali %>% 
   dplyr::select(sex, time, age, lu, lh) %>% 

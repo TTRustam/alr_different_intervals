@@ -61,61 +61,61 @@ extrapolate_type <- function(.data) {
 # -----------------------------------------------------------------------------#
 # creates a submatrix for a given transition,
 # meant to be composed into U
-pi2u <- function(pivec, 
-                 from = "H",
-                 to   = "H",
-                 start_age = 50,
-                 interval  = 1) {
-  out           <- cbind(rbind(0, diag(pivec)), 0)
-  n             <- length(pivec)
-  ages          <- ((0:n) * interval) + start_age
-  from_names    <- paste(from, ages, sep = "::")
-  to_names      <- paste(to, ages, sep = "::")
-  dimnames(out) <- list(to_names, from_names)
-  out
-}
+# pi2u <- function(pivec, 
+#                  from = "H",
+#                  to   = "H",
+#                  start_age = 50,
+#                  interval  = 1) {
+#   out           <- cbind(rbind(0, diag(pivec)), 0)
+#   n             <- length(pivec)
+#   ages          <- ((0:n) * interval) + start_age
+#   from_names    <- paste(from, ages, sep = "::")
+#   to_names      <- paste(to, ages, sep = "::")
+#   dimnames(out) <- list(to_names, from_names)
+#   out
+# }
 # -----------------------------------------------------------------------------#
 # composes U from a set of submatrices
-u2U_closed <- function(HH, HU, UH, UU){
-  out <- rbind(
-    cbind(HH, UH),
-    cbind(HU, UU))
-
-  out <- cbind(rbind(out, 1 - colSums(out)),0)
-  colnames(out)[ncol(out)] <- "D::Inf"
-  rownames(out)[nrow(out)] <- "D::Inf"
-  out[nrow(out),ncol(out)] <- 1
-  out
-}
+# u2U_closed <- function(HH, HU, UH, UU){
+#   out <- rbind(
+#     cbind(HH, UH),
+#     cbind(HU, UU))
+# 
+#   out <- cbind(rbind(out, 1 - colSums(out)),0)
+#   colnames(out)[ncol(out)] <- "D::Inf"
+#   rownames(out)[nrow(out)] <- "D::Inf"
+#   out[nrow(out),ncol(out)] <- 1
+#   out
+# }
 # -----------------------------------------------------------------------------#
 # avoid needing to make submatrices manually,
 # takes care of upper left corner minor detail that
 # caused the singularity error
-Ptibble2U_closed <- function(Ptibble, 
-                             interval  = 1, 
-                             start_age = 50){
-  n <- nrow(Ptibble) + 1
-  HH <- Ptibble %>% 
-    pull(HH) %>% 
-    pi2u("H","H", start_age = start_age, interval = interval) %>% 
-    '['(-1,-n) # hard coded for this example. 
-  # Could be dealt with in pi2u() more generally
-  HU <- Ptibble %>% 
-    pull(HU) %>% 
-    pi2u("H","U", start_age = start_age, interval = interval) %>% 
-    '['(-1,-n)
-  UU <- Ptibble %>% 
-    pull(UU) %>% 
-    pi2u("U","U", start_age = start_age, interval = interval) %>% 
-    '['(-1,-n)
-  UH <- Ptibble %>% 
-    pull(UH) %>% 
-    pi2u("U","H", start_age = start_age, interval = interval) %>% 
-    '['(-1,-n)
-  
-  U <- u2U_closed(HH, HU, UH, UU)
-  U
-}
+# Ptibble2U_closed <- function(Ptibble, 
+#                              interval  = 1, 
+#                              start_age = 50){
+#   n <- nrow(Ptibble) + 1
+#   HH <- Ptibble %>% 
+#     pull(HH) %>% 
+#     pi2u("H","H", start_age = start_age, interval = interval) %>% 
+#     '['(-1,-n) # hard coded for this example. 
+#   # Could be dealt with in pi2u() more generally
+#   HU <- Ptibble %>% 
+#     pull(HU) %>% 
+#     pi2u("H","U", start_age = start_age, interval = interval) %>% 
+#     '['(-1,-n)
+#   UU <- Ptibble %>% 
+#     pull(UU) %>% 
+#     pi2u("U","U", start_age = start_age, interval = interval) %>% 
+#     '['(-1,-n)
+#   UH <- Ptibble %>% 
+#     pull(UH) %>% 
+#     pi2u("U","H", start_age = start_age, interval = interval) %>% 
+#     '['(-1,-n)
+#   
+#   U <- u2U_closed(HH, HU, UH, UU)
+#   U
+# }
 # # -----------------------------------------------------------------------------#
 # interpolate_prob <- function(.data) {
 #   

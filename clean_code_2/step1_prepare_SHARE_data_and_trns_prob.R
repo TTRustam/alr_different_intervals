@@ -30,7 +30,11 @@ gen_files  <- read_sav("SHARE/sharewX_rel9-0-0_gv_allwaves_cv_r.sav",
                        col_select = c(mergeid,
                                       country,
                                       deceased_year,
+                                      deceased_month,
                                       deceased_age,
+                                      num_range("age_int_w", range = 1:9),
+                                      num_range("int_month_w", range = 1:9),
+                                      num_range("int_year_w", range = 1:9),
                                       num_range("deadoralive_w", range = 1:9),
                                       gender,
                                       starts_with("age20"))) %>% 
@@ -40,16 +44,16 @@ gen_files  <- read_sav("SHARE/sharewX_rel9-0-0_gv_allwaves_cv_r.sav",
 
 # choose vars from different waves
 wave_vars <- tibble(
-  age = c(
-    "age2004",
-    "age2007",
-    "age2011",
-    "age2013",
-    "age2015",
-    "age2017",
-    "age2020",
-    "age2021"
-  ),
+  # age = c(
+  #   "age2004",
+  #   "age2007",
+  #   "age2011",
+  #   "age2013",
+  #   "age2015",
+  #   "age2017",
+  #   "age2020",
+  #   "age2021"
+  # ),
   wave = c(
     "w1",
     "w2",
@@ -66,16 +70,22 @@ wave_vars <- tibble(
 # iteratively binding the generated sample to corresponding health dta
 hlth_processed <- pmap(
   list(data = hlth, 
-       age  = wave_vars$age, 
+       # age  = wave_vars$age, 
        wave = wave_vars$wave),
   gather_wave_data
-)
+) %>% 
+  set_names(c("w1",
+              "w2",
+              "w4",
+              "w5",
+              "w6",
+              "w7",
+              "w8",
+              "w9"))
 
 # -----------------------------------------------------------------------------#
-share1 <- hlth_processed %>% 
-  bind_rows() %>% 
-  # keep only 2 year apart studies
-  filter(year %in% c(2011, 2013, 2015, 2017))
+share1 <- hlth_processed[c("w4", "w5", "w6", "w7")] %>%
+  bind_rows()
 
 # initial entries to 2 year data from 3 health definitions
 # change in function 100 to 90
@@ -155,20 +165,19 @@ new_data <- expand_grid(age  = seq(50, 100, 2),
                         time = sort(unique(self$time)),   # time measure
                         sex  = c("male", "female"))
 
-
 # Calculate 2 year transition probabilities with multinomial reg.
 # I tried smoothing. Line becomes wiggly, with no apparent advantages
 # so I kept linear trend
 self_model <- self %>% 
-  probabilities()
+  probabilities() # probabilities_no_time
 chronic_model <- chron %>% 
-  probabilities()
+  probabilities() # probabilities_no_time
 gali_model <- gali %>% 
-  probabilities()
+  probabilities() # probabilities_no_time
 adl_model <- adl %>% 
-  probabilities()
+  probabilities() # probabilities_no_time
 iadl_model <- iadl %>% 
-  probabilities()
+  probabilities() # probabilities_no_time
 # -----------------------------------------------------------------------------#
 # plots empirical vs fitted
 # self looks ok
@@ -180,7 +189,7 @@ self_model$tst %>%
   separate(trans, into = c("from", "to"), sep = "-") %>%
   full_join(self_model$empiric) %>%
   mutate(prob_emp = ifelse(prob_emp == 1, NA, prob_emp)) %>%
-  filter(time == 2015) %>% # change years here.
+  filter(time == 2013) %>% # change years here.
   ggplot() +
   geom_line(aes(x = age, y = prob, group = to, color = to), linewidth = 1) +
   geom_point(aes(x = age, y = prob_emp, color = to)) +
@@ -330,6 +339,7 @@ iadl_model$tst %>%
   unnest(qxdata) %>% 
   dplyr::select(-c(sex, age, time)) %>% 
   rowSums()
+
 
 
 self_mod  <- self_model$tst

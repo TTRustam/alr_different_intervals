@@ -220,49 +220,49 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 
 
 
-# extr_self %>% 
-#   dplyr::select(-c(sex, time, age)) %>% 
+# extr_self %>%
+#   dplyr::select(-c(sex, time, age)) %>%
 #   rowSums()
 # 
-# extr_chron %>% 
-#   dplyr::select(-c(sex, time, age)) %>% 
+# extr_chron %>%
+#   dplyr::select(-c(sex, time, age)) %>%
 #   rowSums()
 # 
-# extr_gali %>% 
-#   dplyr::select(-c(sex, time, age)) %>% 
+# extr_gali %>%
+#   dplyr::select(-c(sex, time, age)) %>%
 #   rowSums()
 # 
-# extr_adl %>% 
-#   dplyr::select(-c(sex, time, age)) %>% 
+# extr_adl %>%
+#   dplyr::select(-c(sex, time, age)) %>%
 #   rowSums()
 # 
-# extr_iadl %>% 
-#   dplyr::select(-c(sex, time, age)) %>% 
+# extr_iadl %>%
+#   dplyr::select(-c(sex, time, age)) %>%
 #   rowSums()
 # 
 # extr_self %>%
 #   dplyr::select(-c(sex, time, age)) %>%
-#   (`<=`)(0) %>% 
+#   (`<=`)(0) %>%
 #   colSums()
 # 
 # extr_chron %>%
 #   dplyr::select(-c(sex, time, age)) %>%
-#   (`<=`)(0) %>% 
+#   (`<=`)(0) %>%
 #   colSums()
 # 
 # extr_gali %>%
 #   dplyr::select(-c(sex, time, age)) %>%
-#   (`<=`)(0) %>% 
+#   (`<=`)(0) %>%
 #   colSums()
 # 
 # extr_adl %>%
 #   dplyr::select(-c(sex, time, age)) %>%
-#   (`<=`)(0) %>% 
+#   (`<=`)(0) %>%
 #   colSums()
 # 
 # extr_iadl %>%
 #   dplyr::select(-c(sex, time, age)) %>%
-#   (`<=`)(0) %>% 
+#   (`<=`)(0) %>%
 #   colSums()
 # 
 # # -----------------------------------------------------------------------------#
@@ -272,18 +272,10 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #     data,
 #     ~ .x %>%
 #       interpolate_prob()
-#   )) %>% 
-#   dplyr::select(-data) %>% 
+#   )) %>%
+#   dplyr::select(-data) %>%
 #   unnest(int_data)
-# 
-# self1 %>% 
-#   filter(prob < 0)
-# 
-# chron1 %>% 
-#   filter(prob < 0)
-# 
-# gali1 %>% 
-#   filter(prob < 0)
+
 # 
 # # note these are always with transitions to death
 # # maybe first adjust and then interpolate?
@@ -372,27 +364,27 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #   
 #   
 #   
-#   extr_self %>% 
-#   full_join(self_emp) %>%
-#   filter(time == 2013) %>% 
-#   ggplot() +
-#   geom_line(aes(x     = age,
-#                 y     = prob,
-#                 group = to,
-#                 color = to), linewidth = 1) +
-#   geom_point(aes(x     = (age - age %% 2),
-#                  y     = prob_emp,
-#                  color = to)) +
-#   facet_grid(from ~ sex, switch = "y") +
-#   scale_y_continuous(breaks = pretty_breaks())+
-#   scale_x_continuous(breaks = seq(20, 110, 5)) +
-#   theme_light() +
-#   theme(legend.position  = "bottom",
-#         strip.placement  = "outside",
-#         strip.background = element_blank(),
-#         strip.text       = element_text(color = "black", face = "bold"),
-#         axis.title.y     = element_blank(),
-#         legend.title     = element_text(color = "black", face = "bold"))
+  # extr_self %>%
+  # full_join(self_emp) %>%
+  # filter(time == 2013) %>%
+  # ggplot() +
+  # geom_line(aes(x     = age,
+  #               y     = prob,
+  #               group = to,
+  #               color = to), linewidth = 1) +
+  # geom_point(aes(x     = (age - age %% 2),
+  #                y     = prob_emp,
+  #                color = to)) +
+  # facet_grid(from ~ sex, switch = "y") +
+  # scale_y_continuous(breaks = pretty_breaks())+
+  # scale_x_continuous(breaks = seq(20, 110, 5)) +
+  # theme_light() +
+  # theme(legend.position  = "bottom",
+  #       strip.placement  = "outside",
+  #       strip.background = element_blank(),
+  #       strip.text       = element_text(color = "black", face = "bold"),
+  #       axis.title.y     = element_blank(),
+  #       legend.title     = element_text(color = "black", face = "bold"))
 # 
 # 
 # library(complexplus)
@@ -507,8 +499,8 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #     data,
 #     ~ .x %>%
 #       interpolate_prob()
-#   )) %>% 
-#   dplyr::select(-data) %>% 
+#   )) %>%
+#   dplyr::select(-data) %>%
 #   unnest(int_data)
 # 
 # gali1 <- extr_gali %>%
@@ -517,8 +509,8 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #     data,
 #     ~ .x %>%
 #       interpolate_prob()
-#   ))%>% 
-#   dplyr::select(-data) %>% 
+#   ))%>%
+#   dplyr::select(-data) %>%
 #   unnest(int_data)
 # 
 # adl1 <- extr_adl %>%
@@ -527,8 +519,8 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #     data,
 #     ~ .x %>%
 #       interpolate_prob()
-#   ))%>% 
-#   dplyr::select(-data) %>% 
+#   ))%>%
+#   dplyr::select(-data) %>%
 #   unnest(int_data)
 # 
 # iadl1 <- extr_iadl %>%
@@ -537,8 +529,8 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #     data,
 #     ~ .x %>%
 #       interpolate_prob()
-#   ))%>% 
-#   dplyr::select(-data) %>% 
+#   ))%>%
+#   dplyr::select(-data) %>%
 #   unnest(int_data)
 # 
 # 
@@ -550,15 +542,15 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 # save(extr_iadl,  file = "updated_results/extr_iadl.RData")
 # 
 # 
-# extr_self %>% 
+# self1 %>%
 #   full_join(self_emp) %>%
-#   filter(time == 2013) %>% 
+#   filter(time == 2013) %>%
 #   ggplot() +
 #   geom_line(aes(x     = age,
 #                 y     = prob,
 #                 group = to,
 #                 color = to), linewidth = 1) +
-#   geom_point(aes(x     = (age - age %% 2),
+#   geom_point(aes(x     = age,
 #                  y     = prob_emp,
 #                  color = to)) +
 #   facet_grid(from ~ sex, switch = "y") +
@@ -571,10 +563,10 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #         strip.text       = element_text(color = "black", face = "bold"),
 #         axis.title.y     = element_blank(),
 #         legend.title     = element_text(color = "black", face = "bold"))
-# 
-# extr_chron %>% 
+# # 
+# chron1 %>%
 #   full_join(chron_emp) %>%
-#   filter(time == 2013) %>% 
+#   filter(time == 2013) %>%
 #   ggplot() +
 #   geom_line(aes(x     = age,
 #                 y     = prob,
@@ -593,10 +585,10 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #         strip.text       = element_text(color = "black", face = "bold"),
 #         axis.title.y     = element_blank(),
 #         legend.title     = element_text(color = "black", face = "bold"))
-# 
-# extr_gali %>% 
+# # 
+# gali1 %>%
 #   full_join(gali_emp) %>%
-#   filter(time == 2013) %>% 
+#   filter(time == 2013) %>%
 #   ggplot() +
 #   geom_line(aes(x     = age,
 #                 y     = prob,
@@ -615,10 +607,32 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #         strip.text       = element_text(color = "black", face = "bold"),
 #         axis.title.y     = element_blank(),
 #         legend.title     = element_text(color = "black", face = "bold"))
-# 
-# extr_adl %>% 
+# # 
+# adl1 %>%
 #   full_join(adl_emp) %>%
-#   filter(time == 2013) %>% 
+#   filter(time == 2013) %>%
+#   ggplot() +
+#   geom_line(aes(x     = age,
+#                 y     = prob,
+#                 group = to,
+#                 color = to), linewidth = 1) +
+#   geom_point(aes(x     = (age - age %% 2),
+#                  y     = prob_emp,
+#                  color = to)) +
+#   facet_grid(from ~ sex, switch = "y") +
+#   scale_y_continuous(breaks = pretty_breaks())+
+#   scale_x_continuous(breaks = seq(20, 110, 5)) +
+#   theme_light() +
+#   theme(legend.position  = "bottom",
+#         strip.placement  = "outside",
+#         strip.background = element_blank(),
+#         strip.text       = element_text(color = "black", face = "bold"),
+#         axis.title.y     = element_blank(),
+#         legend.title     = element_text(color = "black", face = "bold"))
+# # 
+# iadl1 %>%
+#   full_join(iadl_emp) %>%
+#   filter(time == 2011) %>%
 #   ggplot() +
 #   geom_line(aes(x     = age,
 #                 y     = prob,
@@ -638,27 +652,19 @@ save(extr_iadl,  file = "updated_results/inter_iadl_2.RData")
 #         axis.title.y     = element_blank(),
 #         legend.title     = element_text(color = "black", face = "bold"))
 # 
-# extr_iadl %>% 
-#   full_join(iadl_emp) %>%
-#   filter(time == 2011) %>% 
-#   ggplot() +
-#   geom_line(aes(x     = age,
-#                 y     = prob,
-#                 group = to,
-#                 color = to), linewidth = 1) +
-#   geom_point(aes(x     = (age - age %% 2),
-#                  y     = prob_emp,
-#                  color = to)) +
-#   facet_grid(from ~ sex, switch = "y") +
-#   scale_y_continuous(breaks = pretty_breaks())+
-#   scale_x_continuous(breaks = seq(20, 110, 5)) +
-#   theme_light() +
-#   theme(legend.position  = "bottom",
-#         strip.placement  = "outside",
-#         strip.background = element_blank(),
-#         strip.text       = element_text(color = "black", face = "bold"),
-#         axis.title.y     = element_blank(),
-#         legend.title     = element_text(color = "black", face = "bold"))
+# 
+# self1 %>% 
+#   filter(prob <= 0)
+# chron1 %>% 
+#   filter(prob <= 0)
+# gali1 %>% 
+#   filter(prob <= 0)
+# adl1 %>% 
+#   filter(prob <= 0)
+# iadl1 %>% 
+#   filter(prob <= 0)
+
+
 # 
 # # -----------------------------------------------------------------------------#
 # save(self1,  file = "updated_results/inter_self.RData")
